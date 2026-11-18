@@ -60,7 +60,7 @@ The same check runs on pull requests and on pushes to `main`.
 
 ## Publishing credentials (maintainers)
 
-The release workflow supports two authentication modes.
+The current release workflow uses npm Trusted Publishing (OIDC) only. The token flow below was used once to bootstrap the first release and is kept for reference.
 
 ### 1. npm token (needed for the first release)
 
