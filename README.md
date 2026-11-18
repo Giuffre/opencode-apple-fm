@@ -1,5 +1,8 @@
 # OpenCode + Apple Foundation Model (on-device)
 
+[![npm](https://img.shields.io/npm/v/opencode-applefm-compat.svg)](https://www.npmjs.com/package/opencode-applefm-compat)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A distributable setup for using the **Foundation Model built into macOS 27** inside [OpenCode](https://opencode.ai/) as an OpenAI-compatible provider, with **working tool calling**.
 
 ## Verified status
@@ -196,6 +199,14 @@ opencode plugin add opencode-applefm-compat
 Releases are automated: merge conventional commits into `main` and semantic-release determines the next version, publishes npm, and creates a GitHub release. See [CONTRIBUTING.md](CONTRIBUTING.md) for the commit rules and the one-time `NPM_TOKEN` / Trusted Publishing setup.
 
 The V2 plugin API is beta: the package pins `@opencode/plugin` to the verified version (`2.3.0`). Rerun the tests whenever you change the OpenCode version.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for conventional commit rules, release behavior, and publishing setup.
+
+- [Issues](https://github.com/Giuffre/opencode-apple-fm/issues) — bugs and feature requests
+- [Discussions](https://github.com/Giuffre/opencode-apple-fm/discussions) — questions and ideas
+- [Security](SECURITY.md) — private vulnerability reports
 
 ## References
 

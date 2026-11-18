@@ -1,0 +1,44 @@
+name: Bug report
+description: Report a problem with the provider, plugin, or installer
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting. Please fill in as much as you can.
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "27.2.1 (26B131)"
+    validations:
+      required: true
+  - type: input
+    id: opencode
+    attributes:
+      label: OpenCode version
+      placeholder: "v2.3.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ./install.sh
+        2. opencode run --model applefm/system "..."
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Redact private data. `~/.local/share/opencode/log/opencode.log` is usually useful.
+      render: shell
