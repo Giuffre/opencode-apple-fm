@@ -1,0 +1,33 @@
+{
+  "name": "opencode-applefm-compat",
+  "version": "1.0.0",
+  "description": "OpenCode V2 plugin that makes tool schemas compatible with Apple's on-device Foundation Model served by fm serve.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "README.md"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "apple",
+    "foundation-models",
+    "afm",
+    "fm-serve",
+    "tool-calling"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Giuffre/opencode-apple-fm.git",
+    "directory": "plugins/applefm-compat"
+  },
+  "homepage": "https://github.com/Giuffre/opencode-apple-fm#readme",
+  "bugs": "https://github.com/Giuffre/opencode-apple-fm/issues",
+  "dependencies": {
+    "@opencode/plugin": "2.3.0"
+  }
+}

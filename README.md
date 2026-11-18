@@ -159,11 +159,45 @@ Rimuove il LaunchAgent, il plist, il plugin e le chiavi `providers.applefm` / `a
 install.sh                                  # installatore idempotente
 uninstall.sh                                # rimozione
 plugins/applefm-compat/index.ts             # plugin OpenCode (compatibilità AFM)
+plugins/applefm-compat/package.json         # manifest npm del plugin
+plugins/applefm-compat/README.md            # documentazione del pacchetto npm
+LICENSE                                     # MIT
 scripts/smoke-test.py                       # test /health, /models, tool round-trip
 scripts/smoke-test-opencode.sh              # test end-to-end through OpenCode
 config/opencode.snippet.jsonc               # configurazione OpenCode V2 di riferimento
 launchd/ai.opencode.applefm.plist.template  # LaunchAgent
 ```
+
+## Distribuzione e licenza
+
+Il progetto è open source sotto licenza **MIT**.
+
+- Repository: <https://github.com/Giuffre/opencode-apple-fm>
+- Pacchetto npm del plugin: `opencode-applefm-compat`
+
+Setup completo dal sorgente:
+
+```bash
+git clone https://github.com/Giuffre/opencode-apple-fm.git
+cd opencode-apple-fm
+./install.sh
+```
+
+Solo plugin, se il provider `applefm` è già configurato:
+
+```bash
+opencode plugin add opencode-applefm-compat
+```
+
+Per pubblicare una nuova versione del plugin (maintainer):
+
+```bash
+cd plugins/applefm-compat
+npm pack --dry-run
+npm publish --access public
+```
+
+L’API plugin V2 è beta: il pacchetto pinna `@opencode/plugin` alla versione verificata (`2.3.0`). Aggiorna la versione e ripeti i test quando cambi versione di OpenCode.
 
 ## Riferimenti
 
