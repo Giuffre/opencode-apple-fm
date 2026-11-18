@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.opencode.applefm</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/fm</string>
+    <string>serve</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>__PORT__</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>WorkingDirectory</key>
+  <string>__HOME__</string>
+
+  <key>StandardOutPath</key>
+  <string>__DATA_DIR__/fm-serve.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__DATA_DIR__/fm-serve.err.log</string>
+</dict>
+</plist>
