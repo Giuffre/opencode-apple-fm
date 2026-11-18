@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rimuove LaunchAgent e la configurazione applefm da OpenCode.
+# Remove the LaunchAgent and the applefm configuration from OpenCode.
 set -euo pipefail
 
 LABEL="ai.opencode.applefm"
@@ -12,22 +12,22 @@ warn() { printf '\033[0;33m ! \033[0m %s\n' "$*" >&2; }
 
 uid="$(id -u)"
 if launchctl print "gui/$uid/$LABEL" >/dev/null 2>&1; then
-  log "Fermo LaunchAgent"
-  launchctl bootout "gui/$uid/$LABEL" || warn "bootout non riuscito"
+  log "Stopping LaunchAgent"
+  launchctl bootout "gui/$uid/$LABEL" || warn "bootout failed"
 fi
 
 if [[ -f "$PLIST" ]]; then
-  log "Rimuovo $PLIST"
+  log "Removing $PLIST"
   rm "$PLIST"
 fi
 
 if [[ -d "$PLUGIN_DIR" ]]; then
-  log "Rimuovo plugin $PLUGIN_DIR"
+  log "Removing plugin $PLUGIN_DIR"
   rm -rf "$PLUGIN_DIR"
 fi
 
 if [[ -f "$CONFIG_FILE" ]]; then
-  log "Rimuovo provider e agente da $CONFIG_FILE"
+  log "Removing provider and agent from $CONFIG_FILE"
   python3 - "$CONFIG_FILE" <<'PY'
 import json
 import pathlib
@@ -37,7 +37,7 @@ path = pathlib.Path(sys.argv[1])
 try:
     config = json.loads(path.read_text())
 except json.JSONDecodeError as exc:
-    print(f"Impossibile parsare {path}: {exc}", file=sys.stderr)
+    print(f"Cannot parse {path}: {exc}", file=sys.stderr)
     raise SystemExit(1)
 
 providers = config.get("providers")
@@ -52,7 +52,7 @@ if isinstance(agents, dict):
     if not agents:
         config.pop("agents", None)
 
-# Rimuove solo l'impostazione che abbiamo aggiunto noi.
+# Remove only the setting that this installer added.
 if config.get("compaction") == {"auto": False}:
     config.pop("compaction", None)
 
@@ -60,4 +60,4 @@ path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n")
 PY
 fi
 
-log "Fatto. OpenCode ricarica la configurazione automaticamente."
+log "Done. OpenCode reloads configuration automatically."

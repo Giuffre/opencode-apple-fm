@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Installa un provider OpenCode collegato al Foundation Model on-device di macOS.
-# Verificato su macOS 27.2.1 (26B131), OpenCode v2.3.0.
+# Install an OpenCode provider backed by the macOS on-device Foundation Model.
+# Verified on macOS 27.2.1 (26B131), OpenCode v2.3.0.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,20 +11,20 @@ COMPACTION_AUTO=false
 
 usage() {
   cat <<EOF
-Uso: ./install.sh [--port <porta>] [--no-tools] [--keep-compaction]
+Usage: ./install.sh [--port <port>] [--no-tools] [--keep-compaction]
 
-  --port <porta>       Porta loopback di fm serve (default: 1976, oppure \$FM_PORT)
-  --no-tools           Disabilita tool calling nel provider (utile su macOS 27.0.x)
-  --keep-compaction    Mantiene i checkpoint automatici di OpenCode (non consigliato
-                       con un modello da 8K: generano loop di riepiloghi)
-  -h, --help           Mostra questo aiuto
+  --port <port>        Loopback port for fm serve (default: 1976, or \$FM_PORT)
+  --no-tools           Disable tool calling in the provider (useful on macOS 27.0.x)
+  --keep-compaction    Keep OpenCode's automatic checkpoints (not recommended
+                       with an 8K model: they cause summary loops)
+  -h, --help           Show this help
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --port)
-      [[ $# -ge 2 ]] || { echo "Errore: --port richiede un valore" >&2; exit 2; }
+      [[ $# -ge 2 ]] || { echo "Error: --port requires a value" >&2; exit 2; }
       PORT="$2"
       shift 2
       ;;
@@ -41,7 +41,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "Opzione sconosciuta: $1" >&2
+      echo "Unknown option: $1" >&2
       usage >&2
       exit 2
       ;;
@@ -50,38 +50,38 @@ done
 
 log()  { printf '\033[0;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[0;33m ! \033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[0;31mERRORE:\033[0m %s\n' "$*" >&2; exit 1; }
+die()  { printf '\033[0;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
-[[ "$PORT" =~ ^[0-9]+$ ]] || die "La porta deve essere un numero: $PORT"
-(( PORT >= 1 && PORT <= 65535 )) || die "Porta fuori intervallo: $PORT"
+[[ "$PORT" =~ ^[0-9]+$ ]] || die "Port must be a number: $PORT"
+(( PORT >= 1 && PORT <= 65535 )) || die "Port out of range: $PORT"
 
 for tool in python3 curl lsof; do
-  command -v "$tool" >/dev/null 2>&1 || die "Strumento richiesto non trovato: $tool"
+  command -v "$tool" >/dev/null 2>&1 || die "Required tool not found: $tool"
 done
 
 # ---------------------------------------------------------------- preflight
-log "Verifica prerequisites"
+log "Checking prerequisites"
 major="$(sw_vers -productVersion | cut -d. -f1)"
-[[ "$major" -ge 27 ]] || die "Serve macOS 27 o successivo (trovato: $(sw_vers -productVersion))"
+[[ "$major" -ge 27 ]] || die "macOS 27 or later required (found: $(sw_vers -productVersion))"
 
 arch="$(uname -m)"
-[[ "$arch" == "arm64" ]] || die "Serve Apple Silicon (trovato: $arch)"
+[[ "$arch" == "arm64" ]] || die "Apple Silicon required (found: $arch)"
 
-[[ -x /usr/bin/fm ]] || die "/usr/bin/fm non presente"
+[[ -x /usr/bin/fm ]] || die "/usr/bin/fm not found"
 
 license_status="$(fm license --status 2>&1 || true)"
 grep -qi 'agreed' <<<"$license_status" \
-  || die "Licenza fm non accettata. Esegui: sudo fm license"
+  || die "fm license not accepted. Run: sudo fm license"
 
 models_output="$(fm models 2>&1 || true)"
 grep -q '✓ system' <<<"$models_output" \
-  || die "Modello 'system' non disponibile. Attiva Apple Intelligence e scarica il modello."
+  || die "Model 'system' is unavailable. Enable Apple Intelligence and download the model."
 
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN | awk 'NR > 1 {print $1}' | grep -qx 'fm'; then
-    warn "Porta $PORT già usata da fm serve: reinstallazione su servizio esistente."
+    warn "Port $PORT is already used by fm serve: reinstalling over the existing service."
   else
-    die "La porta $PORT è già occupata. Chiudi il processo o usa FM_PORT=<altra-porta>."
+    die "Port $PORT is already in use. Stop the process or use FM_PORT=<other-port>."
   fi
 fi
 
@@ -97,10 +97,10 @@ mkdir -p "$CONFIG_DIR" "$DATA_DIR" "$LAUNCH_DIR"
 if [[ -f "$CONFIG_FILE" ]]; then
   backup="$CONFIG_FILE.bak.$(date +%Y%m%d%H%M%S)"
   cp "$CONFIG_FILE" "$backup"
-  log "Backup configurazione: $backup"
+  log "Configuration backup: $backup"
 fi
 
-log "Aggiorno $CONFIG_FILE"
+log "Updating $CONFIG_FILE"
 python3 - "$CONFIG_FILE" "$TOOLS" "$PORT" "$COMPACTION_AUTO" <<'PY'
 import json
 import pathlib
@@ -116,8 +116,8 @@ if path.exists():
         config = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
         print(
-            f"Impossibile parsare {path} come JSON: {exc}\n"
-            "Converti il file in JSON puro (senza commenti) e riprova.",
+            f"Cannot parse {path} as JSON: {exc}\n"
+            "Convert the file to plain JSON (no comments) and retry.",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -126,11 +126,11 @@ else:
 
 config.setdefault("$schema", "https://opencode.ai/config.json")
 
-# Con 8192 token i checkpoint automatici generano riepiloghi che il modello
-# rilegge come istruzioni, entrando in loop. Si possono riattivare col flag.
+# With 8192 tokens, automatic checkpoints produce summaries that the model
+# rereads as instructions and loops on. The flag can re-enable them.
 config.setdefault("compaction", {})["auto"] = compaction_auto
 
-# Rimuove il vecchio provider V1 `fm` se presente, lasciando gli altri intatti.
+# Remove the legacy V1 `fm` provider if present, leaving other entries intact.
 legacy = config.get("provider")
 if isinstance(legacy, dict) and "fm" in legacy:
     del legacy["fm"]
@@ -161,7 +161,7 @@ providers["applefm"] = {
 
 agents = config.setdefault("agents", {})
 agents["applefm"] = {
-    "description": "Apple on-device Foundation Model: veloce, privato, contesto 8K",
+    "description": "Apple on-device Foundation Model: fast, private, 8K context",
     "mode": "primary",
     "model": "applefm/system",
 }
@@ -169,18 +169,18 @@ agents["applefm"] = {
 path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n")
 PY
 
-# OpenCode carica automaticamente i plugin dalla directory di configurazione.
+# OpenCode automatically loads plugins from its configuration directory.
 PLUGIN_DIR="$CONFIG_DIR/plugins/applefm-compat"
 mkdir -p "$PLUGIN_DIR"
 if [[ -f "$PLUGIN_DIR/index.ts" ]]; then
   backup="$PLUGIN_DIR/index.ts.bak.$(date +%Y%m%d%H%M%S)"
   cp "$PLUGIN_DIR/index.ts" "$backup"
-  log "Backup plugin precedente: $backup"
+  log "Previous plugin backup: $backup"
 fi
 cp "$REPO_DIR/plugins/applefm-compat/index.ts" "$PLUGIN_DIR/index.ts"
-log "Plugin installato: $PLUGIN_DIR/index.ts"
+log "Plugin installed: $PLUGIN_DIR/index.ts"
 
-log "Installo LaunchAgent $LABEL"
+log "Installing LaunchAgent $LABEL"
 sed \
   -e "s|__PORT__|$PORT|g" \
   -e "s|__HOME__|$HOME|g" \
@@ -192,7 +192,7 @@ launchctl bootout "gui/$uid/$LABEL" >/dev/null 2>&1 || true
 launchctl bootstrap "gui/$uid" "$PLIST"
 launchctl kickstart -k "gui/$uid/$LABEL"
 
-log "Attendo /health su 127.0.0.1:$PORT"
+log "Waiting for /health on 127.0.0.1:$PORT"
 base="http://127.0.0.1:$PORT"
 ready=false
 for _ in $(seq 1 30); do
@@ -202,38 +202,38 @@ for _ in $(seq 1 30); do
   fi
   sleep 1
 done
-[[ "$ready" == true ]] || die "fm serve non risponde. Controlla: $DATA_DIR/fm-serve.err.log"
+[[ "$ready" == true ]] || die "fm serve is not responding. Check: $DATA_DIR/fm-serve.err.log"
 
 log "Smoke test (tool calling)"
 if python3 "$REPO_DIR/scripts/smoke-test.py" "$PORT"; then
-  log "Tool calling verificato"
+  log "Tool calling verified"
 else
-  warn "Tool calling NON verificato. Se sei su macOS 27.0.x, aggiorna oppure reinstalla con --no-tools."
+  warn "Tool calling NOT verified. On macOS 27.0.x, upgrade or reinstall with --no-tools."
 fi
 
 cat <<EOF
 
-$(log "Installazione completata")
+$(log "Installation complete")
 
   Provider : applefm/system
   Endpoint : $base/v1
   Config   : $CONFIG_FILE
   Plugin   : $PLUGIN_DIR/index.ts
-  Servizio : $LABEL (loopback, nessuna autenticazione)
-  Log      : $DATA_DIR/
+  Service  : $LABEL (loopback, no authentication)
+  Logs     : $DATA_DIR/
 
-Prova subito:
+Try it now:
 
-  opencode run --model applefm/system "Rispondi solo con: OK"
+  opencode run --model applefm/system "Answer with only: OK"
 
-Test con tool (--auto approva i permessi in modalità non interattiva):
+Tool test (--auto approves permissions in non-interactive mode):
 
-  opencode run --auto --model applefm/system "Usa il tool glob con pattern 'README.md' per verificare che il file esista"
+  opencode run --auto --model applefm/system "Use the glob tool with pattern 'README.md' to check that the file exists"
 
-Oppure dentro OpenCode:
+Or inside OpenCode:
 
-  /models        -> seleziona applefm/system
-  /agent         -> seleziona applefm (facoltativo)
+  /models        -> select applefm/system
+  /agent         -> select applefm (optional)
 
-La configurazione viene ricaricata automaticamente da OpenCode.
+OpenCode reloads configuration automatically.
 EOF

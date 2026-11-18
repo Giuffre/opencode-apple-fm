@@ -1,104 +1,104 @@
 # OpenCode + Apple Foundation Model (on-device)
 
-Setup distribuibile per usare il **Foundation Model incluso in macOS 27** dentro [OpenCode](https://opencode.ai/) come provider OpenAI-compatible, con **tool calling funzionante**.
+A distributable setup for using the **Foundation Model built into macOS 27** inside [OpenCode](https://opencode.ai/) as an OpenAI-compatible provider, with **working tool calling**.
 
-## Stato verificato
+## Verified status
 
-Testato il 2026-11-18 su:
+Tested on 2026-11-18 with:
 
-| Componente | Versione |
+| Component | Version |
 | --- | --- |
 | macOS | 27.2.1 (build 26B131), Apple Silicon |
-| Modello | `system` = **AFM 3 Core Advanced** (on-device, multimodale) |
-| `fm` | `/usr/bin/fm`, licenza accettata |
+| Model | `system` = **AFM 3 Core Advanced** (on-device, multimodal) |
+| `fm` | `/usr/bin/fm`, license accepted |
 | OpenCode | v2.3.0 |
 
-Il tool calling di `fm serve` era regressionato sulle build 27.0.x (nessun `tool_calls` emesso). **Su 27.2.1 è ripristinato**: questo repo usa quindi direttamente `fm serve`, senza bridge Python. Se distribuisci su Mac con 27.0.x, usa `./install.sh --no-tools` oppure aggiorna il sistema.
+Tool calling in `fm serve` was broken on 27.0.x builds (no `tool_calls` emitted). **It is restored on 27.2.1**, so this repository uses `fm serve` directly, with no Python bridge. If you deploy to a Mac running 27.0.x, use `./install.sh --no-tools` or upgrade macOS.
 
-## Come funziona
+## How it works
 
 ```
-OpenCode  --hook "context"-->  plugin applefm-compat  --HTTP /v1/chat/completions-->  fm serve  --> AFM 3 Core Advanced
-                                      |                                                  |
-                                      +-- schema tool AFM-safe                            +-- OpenCode esegue i tool
+OpenCode  --"context" hook-->  applefm-compat plugin  --HTTP /v1/chat/completions-->  fm serve  --> AFM 3 Core Advanced
+                                      |                                                   |
+                                      +-- AFM-safe tool schemas                            +-- OpenCode executes the tools
 ```
 
-- `fm serve` ascolta solo su `127.0.0.1:1976` (modificabile con `FM_PORT`).
-- Nessuna API key, nessun account, nessun costo per token, funziona offline dopo il download iniziale del modello.
-- Un LaunchAgent mantiene il servizio attivo.
-- La configurazione OpenCode usa la sintassi **V2** (`providers` + `package`/`settings`), non il vecchio `provider`/`npm`/`options`.
+- `fm serve` listens only on `127.0.0.1:1976` (configurable with `FM_PORT`).
+- No API key, no account, no per-token cost; it works offline after the initial model download.
+- A LaunchAgent keeps the service running.
+- The OpenCode configuration uses the **V2** syntax (`providers` + `package`/`settings`), not the old `provider`/`npm`/`options`.
 
-### Perché un plugin
+### Why a plugin is needed
 
-Gli schemi dei tool inviati da OpenCode non sono compatibili con AFM: contengono la keyword JSON Schema `pattern` (nel tool `subagent`) e descrizioni così lunghe da superare il limite di 8192 token. Il plugin `applefm-compat`, registrato solo per il provider `applefm`, riscrive la richiesta in uscita:
+The tool schemas sent by OpenCode are not compatible with AFM: they contain the JSON Schema keyword `pattern` (in the `subagent` tool) and descriptions long enough to exceed the 8192-token limit. The `applefm-compat` plugin, registered only for the `applefm` provider, rewrites the outgoing request:
 
-- rimuove la keyword `pattern` senza toccare le proprietà chiamate “pattern” di `glob`/`grep`;
-- accorcia le descrizioni dei tool alla prima frase;
-- non modifica config, cronologia o altri provider.
+- removes the `pattern` keyword without touching properties actually named “pattern” in `glob`/`grep`;
+- shortens tool descriptions to their first sentence;
+- does not change configuration, transcript history, or other providers.
 
-Non aggiunge dipendenze npm: OpenCode carica direttamente il file `.ts` dalla directory di configurazione.
+It adds no npm dependency: OpenCode loads the `.ts` file directly from the configuration directory.
 
-### Perché i checkpoint automatici sono disattivati
+### Why automatic checkpoints are disabled
 
-Con soli 8192 token OpenCode compatta molto presto e produce un riepilogo che viene reiniettato nel contesto. Il modello on-device lo interpreta come “Next Move” e tende a rieseguire lo stesso tool in loop. L’installer imposta quindi `"compaction": {"auto": false}` nella configurazione globale: le risposte diventano immediate e i tool vengono eseguiti una sola volta. Se usi anche provider con contesto ampio e vuoi i checkpoint, reinstalla con `--keep-compaction`. Nota che l’impostazione è globale, non specifica di `applefm`.
+With only 8192 tokens, OpenCode compacts very early and injects a summary back into the context. The on-device model interprets it as a “Next Move” and tends to re-run the same tool in a loop. The installer therefore sets `"compaction": {"auto": false}` in the global configuration: replies become immediate and tools run once. If you also use large-context providers and want checkpoints, reinstall with `--keep-compaction`. Note that this setting is global, not specific to `applefm`.
 
-## Requisiti
+## Requirements
 
 - macOS 27+, Apple Silicon.
-- Apple Intelligence attivo e modello scaricato.
-- Licenza CLI accettata una volta per macchina: `sudo fm license`.
-- `python3`, `curl`, `lsof` (presenti di default con Xcode Command Line Tools).
+- Apple Intelligence enabled and the model downloaded.
+- CLI license accepted once per machine: `sudo fm license`.
+- `python3`, `curl`, `lsof` (included by default with Xcode Command Line Tools).
 - OpenCode v2.
 
-## Installazione
+## Installation
 
 ```bash
-git clone <questo-repo> opencode-apple-fm
+git clone https://github.com/Giuffre/opencode-apple-fm.git
 cd opencode-apple-fm
 chmod +x install.sh uninstall.sh
 ./install.sh
 ```
 
-Opzioni:
+Options:
 
 ```bash
-FM_PORT=1977 ./install.sh          # porta diversa
-./install.sh --no-tools            # disabilita tool calling (macOS 27.0.x)
-./install.sh --keep-compaction     # mantiene i checkpoint automatici di OpenCode
+FM_PORT=1977 ./install.sh          # different port
+./install.sh --no-tools            # disable tool calling (macOS 27.0.x)
+./install.sh --keep-compaction     # keep OpenCode's automatic checkpoints
 ```
 
-Lo script:
+The script:
 
-1. verifica macOS/Apple Silicon/`fm`/licenza/modello/porta libera (riconosce il proprio `fm serve` in caso di reinstallazione);
-2. fa un backup di `~/.config/opencode/opencode.jsonc` e lo aggiorna in modo non distruttivo (provider, agente e `compaction.auto`);
-3. rimuove il vecchio provider V1 `fm` se presente;
-4. installa il plugin in `~/.config/opencode/plugins/applefm-compat/`;
-5. installa `~/Library/LaunchAgents/ai.opencode.applefm.plist` e avvia il servizio;
-6. esegue uno smoke test end-to-end con un tool call e il suo risultato.
+1. checks macOS / Apple Silicon / `fm` / license / model / free port (it recognizes its own `fm serve` on reinstall);
+2. backs up `~/.config/opencode/opencode.jsonc` and updates it non-destructively (provider, agent, and `compaction.auto`);
+3. removes the old V1 `fm` provider if present;
+4. installs the plugin into `~/.config/opencode/plugins/applefm-compat/`;
+5. installs `~/Library/LaunchAgents/ai.opencode.applefm.plist` and starts the service;
+6. runs an end-to-end smoke test with a tool call and its result.
 
-## Utilizzo
+## Usage
 
-Dentro OpenCode:
+Inside OpenCode:
 
 ```text
 /models        -> applefm/system
-/agent         -> applefm (opzionale)
+/agent         -> applefm (optional)
 ```
 
-Oppure per una singola esecuzione:
+Or for a single run:
 
 ```bash
-opencode run --model applefm/system "Spiegami cos'è un closure in Swift in due righe"
+opencode run --model applefm/system "Explain what a Swift closure is in two lines"
 ```
 
-Per test che usano i tool in modalità non interattiva aggiungi `--auto`, che approva i permessi non esplicitamente negati:
+For tests that use tools in non-interactive mode, add `--auto`, which approves permissions that are not explicitly denied:
 
 ```bash
 opencode run --auto --model applefm/system \
-  "Usa il tool glob con pattern 'README.md' per verificare che il file esista"
+  "Use the glob tool with pattern 'README.md' to check that the file exists"
 ```
 
-Per usarlo come default solo in un progetto, crea `opencode.json` nella root del progetto:
+To make it the default for a single project, create `opencode.json` in the project root:
 
 ```json
 {
@@ -107,75 +107,75 @@ Per usarlo come default solo in un progetto, crea `opencode.json` nella root del
 }
 ```
 
-La configurazione viene ricaricata automaticamente da OpenCode.
+OpenCode reloads configuration automatically.
 
-## Verifica manuale
+## Manual verification
 
 ```bash
 curl -s http://127.0.0.1:1976/health
 curl -s http://127.0.0.1:1976/v1/models
 python3 scripts/smoke-test.py 1976
 
-# Test through OpenCode (più lento, include un tool call)
+# Test through OpenCode (slower, includes a tool call)
 chmod +x scripts/smoke-test-opencode.sh
 ./scripts/smoke-test-opencode.sh
 ```
 
-## Limiti noti
+## Known limitations
 
-- **Contesto 8.192 token**, di cui ~8.132 utilizzabili per prompt + risposta. Non è un sostituto di un modello di coding da 200K.
-- La compattazione automatica è disattivata: sessioni molto lunghe prima o poi supereranno i 8K. In quel caso usa `/compact` manualmente o riavvia la sessione.
-- Le immagini funzionano solo come `data:image/...;base64,...` inline; `fm serve` non scarica URL remoti.
-- `max_tokens` viene accettato ma ignorato dal server; `stop`, `n` e `reasoning_effort` restituiscono 400.
-- `pcc` compare in `/v1/models` ma non è utilizzabile da processi non-Terminal; il provider configurato espone solo `system`.
-- `fm serve` **non fa autenticazione**: non esporlo mai fuori da localhost (non usare `--host 0.0.0.0`).
-- I log di `fm serve` sono TTY-gated e possono risultare vuoti se rediretti.
+- **8192-token context**, of which about 8132 are usable for prompt + reply. It is not a replacement for a 200K coding model.
+- Automatic compaction is disabled: very long sessions will eventually exceed 8K. In that case, run `/compact` manually or restart the session.
+- Images only work as inline `data:image/...;base64,...`; `fm serve` does not download remote URLs.
+- `max_tokens` is accepted but ignored by the server; `stop`, `n`, and `reasoning_effort` return 400.
+- `pcc` appears in `/v1/models` but cannot be used from non-Terminal processes; the configured provider exposes only `system`.
+- `fm serve` **does not authenticate**: never expose it outside localhost (do not use `--host 0.0.0.0`).
+- `fm serve` logs are TTY-gated and may be empty when redirected.
 
 ## Troubleshooting
 
-| Sintomo | Cosa controllare |
+| Symptom | What to check |
 | --- | --- |
-| `fm` dice “YOU HAVE NOT AGREED...” | `sudo fm license` |
-| `✗ system` in `fm models` | Attiva Apple Intelligence e lascia scaricare il modello |
-| `Model unavailable: applefm/system` | Verifica `/models`; la porta deve essere libera e `/health` rispondere |
-| Nessun `tool_calls` | Build 27.0.x: aggiorna a 27.2+ o reinstalla con `--no-tools` |
-| `A generation guide with an unsupported pattern was used` | Il plugin non è caricato: controlla `~/.config/opencode/plugins/applefm-compat/index.ts` e riavvia OpenCode |
-| `Provided N tokens, but the maximum allowed is 8192` | Il plugin non è caricato o il prompt è troppo lungo; accorcia il contesto |
-| `opencode run` resta appeso su un tool | Aggiungi `--auto` per approvare i permessi; se il modello ripete sempre lo stesso tool, controlla che `compaction.auto` sia `false` |
-| Porta occupata | `lsof -nP -iTCP:1976 -sTCP:LISTEN`; usa `FM_PORT` |
-| Servizio non parte | `launchctl print gui/$(id -u)/ai.opencode.applefm`; controlla `~/.local/share/opencode-apple-fm/` |
+| `fm` says “YOU HAVE NOT AGREED...” | Run `sudo fm license` |
+| `✗ system` in `fm models` | Enable Apple Intelligence and let the model download |
+| `Model unavailable: applefm/system` | Check `/models`; the port must be free and `/health` must respond |
+| No `tool_calls` | 27.0.x build: upgrade to 27.2+ or reinstall with `--no-tools` |
+| `A generation guide with an unsupported pattern was used` | The plugin is not loaded: check `~/.config/opencode/plugins/applefm-compat/index.ts` and restart OpenCode |
+| `Provided N tokens, but the maximum allowed is 8192` | The plugin is not loaded, or the prompt is too long; shorten the context |
+| `opencode run` hangs on a tool | Add `--auto` to approve permissions; if the model keeps repeating the same tool, check that `compaction.auto` is `false` |
+| Port already in use | `lsof -nP -iTCP:1976 -sTCP:LISTEN`; use `FM_PORT` |
+| Service does not start | `launchctl print gui/$(id -u)/ai.opencode.applefm`; check `~/.local/share/opencode-apple-fm/` |
 
-## Disinstallazione
+## Uninstallation
 
 ```bash
 ./uninstall.sh
 ```
 
-Rimuove il LaunchAgent, il plist, il plugin e le chiavi `providers.applefm` / `agents.applefm` dalla configurazione globale, preservando le altre impostazioni.
+Removes the LaunchAgent, the plist, the plugin, and the `providers.applefm` / `agents.applefm` keys from the global configuration, preserving other settings.
 
-## File
+## Files
 
 ```text
-install.sh                                  # installatore idempotente
-uninstall.sh                                # rimozione
-plugins/applefm-compat/index.ts             # plugin OpenCode (compatibilità AFM)
-plugins/applefm-compat/package.json         # manifest npm del plugin
-plugins/applefm-compat/README.md            # documentazione del pacchetto npm
+install.sh                                  # idempotent installer
+uninstall.sh                                # removal
+plugins/applefm-compat/index.ts             # OpenCode plugin (AFM compatibility)
+plugins/applefm-compat/package.json         # npm manifest for the plugin
+plugins/applefm-compat/README.md            # package documentation
 LICENSE                                     # MIT
-scripts/smoke-test.py                       # test /health, /models, tool round-trip
-scripts/smoke-test-opencode.sh              # test end-to-end through OpenCode
-config/opencode.snippet.jsonc               # configurazione OpenCode V2 di riferimento
+scripts/smoke-test.py                       # /health, /models, tool round-trip
+scripts/smoke-test-opencode.sh              # end-to-end test through OpenCode
+config/opencode.snippet.jsonc               # reference OpenCode V2 configuration
 launchd/ai.opencode.applefm.plist.template  # LaunchAgent
 ```
 
-## Distribuzione e licenza
+## Distribution and license
 
-Il progetto è open source sotto licenza **MIT**.
+This project is open source under the **MIT** license.
 
 - Repository: <https://github.com/Giuffre/opencode-apple-fm>
-- Pacchetto npm del plugin: `opencode-applefm-compat`
+- npm package for the plugin: `opencode-applefm-compat`
 
-Setup completo dal sorgente:
+Full setup from source:
 
 ```bash
 git clone https://github.com/Giuffre/opencode-apple-fm.git
@@ -183,13 +183,13 @@ cd opencode-apple-fm
 ./install.sh
 ```
 
-Solo plugin, se il provider `applefm` è già configurato:
+Plugin only, if the `applefm` provider is already configured:
 
 ```bash
 opencode plugin add opencode-applefm-compat
 ```
 
-Per pubblicare una nuova versione del plugin (maintainer):
+To publish a new plugin version (maintainers):
 
 ```bash
 cd plugins/applefm-compat
@@ -197,11 +197,11 @@ npm pack --dry-run
 npm publish --access public
 ```
 
-L’API plugin V2 è beta: il pacchetto pinna `@opencode/plugin` alla versione verificata (`2.3.0`). Aggiorna la versione e ripeti i test quando cambi versione di OpenCode.
+The V2 plugin API is beta: the package pins `@opencode/plugin` to the verified version (`2.3.0`). Bump the version and rerun the tests whenever you change the OpenCode version.
 
-## Riferimenti
+## References
 
 - [Foundation Models framework](https://developer.apple.com/documentation/foundationmodels)
-- [Foundation Models SDK for Python](https://apple.github.io/python-apple-fm-sdk/) (non necessario qui)
+- [Foundation Models SDK for Python](https://apple.github.io/python-apple-fm-sdk/) (not needed here)
 - [OpenCode providers](https://opencode.ai/docs/providers/)
 - [OpenCode models / local](https://opencode.ai/docs/models/#local)

@@ -1,24 +1,24 @@
 import { Plugin } from "@opencode/plugin"
 
 /**
- * Compatibilità OpenCode -> Apple Foundation Model.
+ * OpenCode -> Apple Foundation Model compatibility.
  *
- * AFM guided generation non accetta la keyword JSON Schema `pattern` e ha un
- * limite duro di 8192 token. Lo schema dei tool di OpenCode contiene invece
- * `pattern` (nel tool `subagent`) e descrizioni molto lunghe.
+ * AFM guided generation does not accept the JSON Schema `pattern` keyword and
+ * has a hard 8192-token limit. OpenCode's tool schemas contain `pattern` (in
+ * the `subagent` tool) and very long descriptions.
  *
- * Questo hook riscrive solo la richiesta in uscita per il provider `applefm`:
- * non modifica la configurazione, la cronologia o gli altri provider.
+ * This hook rewrites only the outgoing request for the `applefm` provider:
+ * it does not change configuration, transcript history, or other providers.
  */
 
-/** Rimuove la keyword `pattern`, senza toccare le proprietà chiamate "pattern". */
+/** Remove the `pattern` keyword without touching properties named "pattern". */
 function cleanSchema(node: any, isPropertyMap = false): any {
   if (Array.isArray(node)) return node.map((item) => cleanSchema(item))
   if (!node || typeof node !== "object") return node
 
   const out: any = {}
   for (const [key, value] of Object.entries(node)) {
-    // Dentro `properties` le chiavi sono nomi di proprietà, non keyword.
+    // Inside `properties`, keys are property names, not keywords.
     if (!isPropertyMap && key === "pattern") continue
     out[key] =
       key === "properties" || key === "$defs" || key === "definitions"
@@ -28,7 +28,7 @@ function cleanSchema(node: any, isPropertyMap = false): any {
   return out
 }
 
-/** Tiene solo la prima frase: i tool restano descritti, senza saturare il contesto. */
+/** Keep only the first sentence: tools stay described without filling the context. */
 function shorten(description: unknown): unknown {
   if (typeof description !== "string") return description
   const firstSentence = description.match(/^.+?[.!?](?=\s|$)/s)?.[0]

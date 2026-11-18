@@ -1,10 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  // Provider OpenAI-compatible servito da `fm serve` su 127.0.0.1.
-  // Nota: install.sh installa anche plugins/applefm-compat, necessario per
-  // rendere gli schemi dei tool compatibili con AFM (keyword `pattern` e limite 8K).
-  // I checkpoint automatici sono disattivati: con 8K di contesto generano
-  // riepiloghi che il modello rilegge come istruzioni, entrando in loop.
+  // OpenAI-compatible provider served by `fm serve` on 127.0.0.1.
+  // Note: install.sh also installs plugins/applefm-compat, required to make
+  // tool schemas compatible with AFM (`pattern` keyword and 8K limit).
+  // Automatic checkpoints are disabled: with 8K of context they generate
+  // summaries that the model rereads as instructions and loops on.
   "compaction": {
     "auto": false
   },
@@ -33,11 +33,11 @@
       }
     }
   },
-  // Opzionale: agente dedicato. Non impostare `system`, così OpenCode
-  // mantiene il suo prompt base con le istruzioni per l'uso degli strumenti.
+  // Optional: dedicated agent. Do not set `system`, so OpenCode keeps its
+  // base prompt with instructions for using tools.
   "agents": {
     "applefm": {
-      "description": "Apple on-device Foundation Model: veloce, privato, contesto 8K",
+      "description": "Apple on-device Foundation Model: fast, private, 8K context",
       "mode": "primary",
       "model": "applefm/system"
     }

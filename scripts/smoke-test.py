@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Verifica end-to-end che `fm serve` sia raggiungibile e faccia tool calling.
+"""End-to-end check that `fm serve` is reachable and supports tool calling.
 
-Uso:
+Usage:
     python3 scripts/smoke-test.py [port]
 
-Esce 0 se tutto ok, 1 al primo fallback.
+Exits 0 on success, 1 on the first failure.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def get_json(url: str) -> dict:
         with urllib.request.urlopen(url, timeout=10) as response:
             return json.load(response)
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        fail(f"impossibile fare GET {url}: {exc}")
+        fail(f"could not GET {url}: {exc}")
 
 
 def post_json(url: str, payload: dict) -> dict:
@@ -59,7 +59,7 @@ def post_json(url: str, payload: dict) -> dict:
         with urllib.request.urlopen(request, timeout=120) as response:
             return json.load(response)
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        fail(f"impossibile fare POST {url}: {exc}")
+        fail(f"could not POST {url}: {exc}")
 
 
 def main() -> None:
@@ -68,13 +68,13 @@ def main() -> None:
 
     health = get_json(f"{base}/health")
     if "running" not in str(health.get("status", "")):
-        fail(f"/health non pronto: {health}")
+        fail(f"/health is not ready: {health}")
     print("OK   /health")
 
     models = get_json(f"{base}/v1/models")
     ids = [m.get("id") for m in models.get("data", [])]
     if "system" not in ids:
-        fail(f"modello 'system' assente in /v1/models: {ids}")
+        fail(f"model 'system' missing from /v1/models: {ids}")
     print("OK   /v1/models -> system")
 
     messages = [
@@ -96,15 +96,15 @@ def main() -> None:
         tool_call = first["choices"][0]["message"]["tool_calls"][0]
     except (KeyError, IndexError, TypeError):
         fail(
-            "il modello non ha emesso tool_calls. "
-            "Su macOS 27.0.x il tool calling di fm serve è rotto: "
-            "aggiorna a 27.2+ oppure usa install.sh --no-tools"
+            "the model did not emit tool_calls. "
+            "On macOS 27.0.x, tool calling in fm serve is broken: "
+            "upgrade to 27.2+ or use install.sh --no-tools"
         )
     call_id = tool_call["id"]
     name = tool_call["function"]["name"]
     args = json.loads(tool_call["function"]["arguments"])
     if name != "add" or {k: int(v) for k, v in args.items()} != {"a": 2, "b": 3}:
-        fail(f"tool_call inatteso: {name} {args}")
+        fail(f"unexpected tool_call: {name} {args}")
     print("OK   tool_calls -> add(a=2, b=3)")
 
     messages.extend(
@@ -131,8 +131,8 @@ def main() -> None:
     )
     content = second.get("choices", [{}])[0].get("message", {}).get("content", "")
     if "5" not in str(content):
-        fail(f"il modello non ha usato il risultato del tool: {content!r}")
-    print("OK   tool result -> risposta finale")
+        fail(f"the model did not use the tool result: {content!r}")
+    print("OK   tool result -> final reply")
 
     print("SMOKE TEST PASS")
 

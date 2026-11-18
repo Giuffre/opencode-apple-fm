@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verifica che OpenCode usi il provider applefm e completi un tool call.
-# È più lento dello smoke test HTTP: il modello on-device impiega qualche secondo.
+# Verify that OpenCode uses the applefm provider and completes a tool call.
+# Slower than the HTTP smoke test: the on-device model takes a few seconds.
 set -euo pipefail
 
 MODEL="${1:-applefm/system}"
@@ -11,21 +11,21 @@ fail() { printf '\033[0;31mFAIL:\033[0m %s\n' "$*" >&2; exit 1; }
 
 cd "$REPO_DIR"
 
-log "Eseguo prompt con tool su $MODEL (può volerci un minuto)"
+log "Running a tool prompt on $MODEL (this may take a minute)"
 output="$(opencode run --auto --model "$MODEL" \
-  "Usa il tool glob con pattern 'README.md' per verificare che il file esista, poi rispondi." 2>&1)" \
-  || fail "opencode run è terminato con errore: $output"
+  "Use the glob tool with pattern 'README.md' to check that the file exists, then reply." 2>&1)" \
+  || fail "opencode run exited with an error: $output"
 
 printf '%s\n' "$output"
 
 if grep -qiE 'unsupported pattern|Provided [0-9.]+ tokens|Nothing to compact|tool\.execution.*error|Model unavailable' <<<"$output"; then
-  fail "errore noto nella risposta di OpenCode"
+  fail "known error in the OpenCode response"
 fi
 
-# La prova è il tool call, non la forma della risposta finale: AFM ha 8K di
-# contesto e può rigenerare i checkpoint di OpenCode prima di concludere.
+# The proof is the tool call, not the shape of the final reply: AFM has 8K of
+# context and may regenerate OpenCode checkpoints before concluding.
 if ! grep -q 'Glob' <<<"$output"; then
-  fail "OpenCode non risulta aver eseguito il tool glob"
+  fail "OpenCode does not appear to have executed the glob tool"
 fi
 
 log "SMOKE TEST OPENCODE PASS"

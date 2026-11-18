@@ -1,27 +1,27 @@
 # opencode-applefm-compat
 
-Plugin per **OpenCode V2** che rende gli schemi dei tool compatibili con il Foundation Model on-device di Apple (`fm serve`).
+A plugin for **OpenCode V2** that makes tool schemas compatible with Apple's on-device Foundation Model (`fm serve`).
 
-## Perché serve
+## Why it exists
 
-OpenCode invia al modello gli schemi JSON Schema dei propri tool. AFM non supporta la keyword `pattern` (presente nel tool `subagent`) e ha un limite duro di 8192 token, che le descrizioni lunghe dei tool superano. Senza questo plugin le richieste con tool falliscono con:
+OpenCode sends the JSON Schema of its tools to the model. AFM does not support the `pattern` keyword (used by the `subagent` tool) and has a hard 8192-token limit that long tool descriptions can exceed. Without this plugin, requests containing tools fail with:
 
 - `A generation guide with an unsupported pattern was used.`
 - `Provided N tokens, but the maximum allowed is 8192.`
 
-## Cosa fa
+## What it does
 
-Registra un hook `context` solo per il provider `applefm`:
+Registers a `context` hook only for the `applefm` provider:
 
-- rimuove la keyword JSON Schema `pattern` senza toccare le proprietà chiamate “pattern” di `glob`/`grep`;
-- accorcia le descrizioni dei tool alla prima frase;
-- non modifica configurazione, cronologia o altri provider.
+- removes the JSON Schema `pattern` keyword without touching properties actually named “pattern” in `glob`/`grep`;
+- shortens tool descriptions to their first sentence;
+- does not modify configuration, transcript history, or other providers.
 
-## Installazione
+## Installation
 
-Il plugin presume che esista già un provider OpenCode V2 chiamato `applefm` che punta a `http://127.0.0.1:<porta>/v1`.
+The plugin assumes an OpenCode V2 provider named `applefm` already points to `http://127.0.0.1:<port>/v1`.
 
-Per il setup completo — licenza `fm`, LaunchAgent, provider, plugin e test — usa l’installer del repository:
+For the complete setup — `fm` license, LaunchAgent, provider, plugin, and tests — use the repository installer:
 
 ```bash
 git clone https://github.com/Giuffre/opencode-apple-fm.git
@@ -29,18 +29,18 @@ cd opencode-apple-fm
 ./install.sh
 ```
 
-Se il provider è già configurato e vuoi solo il plugin:
+If the provider is already configured and you only want the plugin:
 
 ```bash
 opencode plugin add opencode-applefm-compat
 ```
 
-Oppure copia `index.ts` in `~/.config/opencode/plugins/applefm-compat/`: OpenCode lo carica automaticamente.
+Or copy `index.ts` into `~/.config/opencode/plugins/applefm-compat/`: OpenCode loads it automatically.
 
-## Compatibilità
+## Compatibility
 
-Verificato con OpenCode `2.3.0`, macOS `27.2.1` (Apple Silicon), modello `system` = AFM 3 Core Advanced. L’API plugin V2 è beta: controlla le versioni prima di aggiornare OpenCode.
+Verified with OpenCode `2.3.0`, macOS `27.2.1` (Apple Silicon), model `system` = AFM 3 Core Advanced. The V2 plugin API is beta: check versions before upgrading OpenCode.
 
-## Licenza
+## License
 
-MIT — vedi `LICENSE` nel repository.
+MIT — see `LICENSE` in the repository.
