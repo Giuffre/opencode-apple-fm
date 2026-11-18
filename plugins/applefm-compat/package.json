@@ -9,8 +9,12 @@
   },
   "files": [
     "index.ts",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "opencode",
     "opencode-plugin",
