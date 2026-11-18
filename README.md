@@ -162,6 +162,10 @@ plugins/applefm-compat/index.ts             # OpenCode plugin (AFM compatibility
 plugins/applefm-compat/package.json         # npm manifest for the plugin
 plugins/applefm-compat/README.md            # package documentation
 LICENSE                                     # MIT
+CONTRIBUTING.md                             # conventional commits and release process
+.releaserc.json                             # semantic-release configuration
+.github/workflows/release.yml               # automated versioning and publishing
+.github/workflows/commitlint.yml            # commit message validation
 scripts/smoke-test.py                       # /health, /models, tool round-trip
 scripts/smoke-test-opencode.sh              # end-to-end test through OpenCode
 config/opencode.snippet.jsonc               # reference OpenCode V2 configuration
@@ -189,15 +193,9 @@ Plugin only, if the `applefm` provider is already configured:
 opencode plugin add opencode-applefm-compat
 ```
 
-To publish a new plugin version (maintainers):
+Releases are automated: merge conventional commits into `main` and semantic-release determines the next version, publishes npm, and creates a GitHub release. See [CONTRIBUTING.md](CONTRIBUTING.md) for the commit rules and the one-time `NPM_TOKEN` / Trusted Publishing setup.
 
-```bash
-cd plugins/applefm-compat
-npm pack --dry-run
-npm publish --access public
-```
-
-The V2 plugin API is beta: the package pins `@opencode/plugin` to the verified version (`2.3.0`). Bump the version and rerun the tests whenever you change the OpenCode version.
+The V2 plugin API is beta: the package pins `@opencode/plugin` to the verified version (`2.3.0`). Rerun the tests whenever you change the OpenCode version.
 
 ## References
 
